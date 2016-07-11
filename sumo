@@ -1,0 +1,53 @@
+# Daphne, Bec, Grace, Anna
+# GSET Robotics
+# July 11, 2016
+
+#PORTS DIRECTORY
+#BAS1 - color sensor
+#BBS1 - reflective light sensor
+#BAM1 - motor RIGHT
+#BBM1 - motor LEFT
+#BAS2 - infrared sensor
+
+#light = psm.BBS1.lightSensorNXT(True)
+
+from PiStorms import PiStorms
+from time import sleep
+from HiTechnicColorV2 import HiTechnicColorV2
+
+class Sumo:
+    def __init__(self):
+        self.psm = PiStorms()
+        self.hc=HiTechnicColorV2()
+        self.psm.BAS1.activateCustomSensorI2C()
+        self.on = False
+        self.black = 750 ##!!!!!!!!check this num
+        self.nearApponent = False
+
+    def lowerFlap(self):
+        #drop the flap down
+
+    def raiseFlap(self):
+         #raise the flap
+
+    def perpFlap(self):
+        #make the flap perp to push apponent
+
+    def findApponent(self):
+        #do this
+
+    def escape(self):
+        #do this
+
+    def goStraight(self):
+        #do this
+
+    #should be used in a thread?
+    def onEdge(self):
+        while(self.on):
+            if (self.psm.BBS1.lightSensorNXT(True) < self.black):
+                if (self.nearApponent):
+                    self.escape()
+                else:
+                    self.goStraight()#or self.findApponent??
+            
