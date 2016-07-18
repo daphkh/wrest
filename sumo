@@ -3,51 +3,164 @@
 # July 11, 2016
 
 #PORTS DIRECTORY
-#BAS1 - color sensor
-#BBS1 - reflective light sensor
+#BAS1 - color sensor  === FRONT
+#BBS1 - reflective light sensor === BACK
 #BAM1 - motor RIGHT
 #BBM1 - motor LEFT
 #BAS2 - infrared sensor
-
+#BBM2 - motor 3
 #light = psm.BBS1.lightSensorNXT(True)
 
 from PiStorms import PiStorms
 from time import sleep
 from HiTechnicColorV2 import HiTechnicColorV2
 
-class Sumo:
+class Color:
     def __init__(self):
-        self.psm = PiStorms()
+        self.black = 750 #play with this number
+
+    def getBlack(self):
+        return self.black
+
+    def isBlack(self, color):
+        if light >= self.black:
+            return True
+        return False
+
+class Sumo:
+    def __init__(self, psm):
+        self.psm = psm
         self.hc=HiTechnicColorV2()
         self.psm.BAS1.activateCustomSensorI2C()
+        self.psm.BAS1.resetTouchesNXT()
         self.on = False
-        self.black = 750 ##!!!!!!!!check this num
+        self.color = Color() 
         self.nearApponent = False
+        
 
-    def lowerFlap(self):
-        #drop the flap down
-
-    def raiseFlap(self):
-         #raise the flap
-
-    def perpFlap(self):
-        #make the flap perp to push apponent
+    #turns on, puts light on, waits 5 sec, then goes straight to tip
+    def turnOn(self):
+        self.on = True
+        self.psm.led(1,255,0,0)
+        sleep(5)
+        self.psm.BAM1.setSpeed(-100)
+        self.psm.BBM1.setSpeed(-100)
+        self.psm.BBM2.setSpeed(100)
+        sleep(.8)
 
     def findApponent(self):
-        #do this
+        while (True):#!!!!!!!!!!!!!!!!!!!!!!!!!!!
+            
 
-    def escape(self):
-        #do this
+    #pushes on until on edge, in which case does onEdge thing and quits,
+    #or until it sees that it is going backwards/totally static, in which case it goes around
+    def push(self):
+        goOn = True
+        while(goOn):
+            if self.onEdge():
+                goOn = False
+                break
+            #go forward
+            self.psm.BAM1.setSpeed(-100)
+            self.psm.BBM1.setSpeed(-100)
+            self.psm.BBM2.setSpeed(100)
+            sleep(1)
 
-    def goStraight(self):
-        #do this
+            #check if button is pressed
+            if (psm.isKeyPressed()):
+                goOn = False
+                break
+            
+            #pause back wheel and check pos
+            self.psm.BBM2.float()
+            pos = self.BBM2.pos()
+            sleep(.1)
+            tempPos = self.psm.BBM2.pos()
+            if tempPos == pos: #if they equal, pause for a second then check again
+                sleep(.5)
+                tempPos = self.psm.BBM2.pos()
+                if tempPos <= pos:
+                    #do esape thing
+                    goOn = False
+                    break
+            elif tempPos < pos:
+                self.goAround()
+                goOn = False
+                break
+            pos = TempPos
+
+            #check if button is pressed
+            if (self.psm.isKeyPressed()):
+                self.goAround()
+                goOn = False
+                break
+
+    def escape(self, backSensor):
+        if backSensor: #go forward --> i doubt this would ever be used
+            self.psm.BBM1.setSpeed(-100)
+            self.psm.BAM1.setSpeed(-100)
+            self.psm.BBM2.setSpeed(100)
+            sleep(.4)
+        else:#go backwards then spin
+            self.psm.BBM1.setSpeed(100)
+            self.psm.BAM1.setSpeed(100)
+            self.psm.BBM2.setSpeed(-100)
+            sleep(.4)
+            #spin
+            self.psm.led(1,255,0,0)
+            self.psm.BBM1.setSpeed(-100)
+            self.psm.BAM1.setSpeed(100)
+            sleep(.3)
+        self.findApponent()
+        
+
+    def goAround(self, onEdge):
+        #goes around the robot to the side !!!!!!!!!
+        
+    def goForward(self, time, zigCount):
+        #do this - zig zag  !!!!!!!!!
+
+    def robotLeft(self):
+        if psm.BAS1.numTouchesNXT() > 0:
+            psm.BAS1.resetTouchesNXT()
+            return True
+        return False
+
+    def robotFront(self):
+        ##use ultrasonic !!!!!!!!!!
+    
+    def nearApponent(self):
+        #return bool based on sensors  !!!!!!!!!!!!!
 
     #should be used in a thread?
     def onEdge(self):
-        while(self.on):
-            if (self.psm.BBS1.lightSensorNXT(True) < self.black):
-                if (self.nearApponent):
-                    self.escape()
-                else:
-                    self.goStraight()#or self.findApponent??
+        lightSenseWhite = not (self.color.isBlack(self.psm.BBS1.lightSensorNXT(True)))
+        if self.on and lightSenseWhite:
+            if (self.nearApponent()):
+                self.goAround(True)
+                return True
+            else:
+                self.escape(True)
+                return True
+        colorSenseWhite = self.hc.get_colornum() == 17
+        if self.on and colorSenseWhite:
+            if (self.nearApponent()):
+                self.goAround(True)
+                return True
+            else:
+                self.escape(False)
+                return True
+        return False
+
+
+psm = PiStorms()
+robot = Sumo(psm)
+#wait until button is pressed to "turn the robot on"
+while True:
+    if psm.isKeyPressed():
+        break
+robot.turnOn()
+robot.findApponent()
+
+
             
