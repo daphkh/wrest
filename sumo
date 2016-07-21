@@ -3,12 +3,12 @@
 # July 11, 2016
 
 ###PORTS DIRECTORY###
-#BAS1 - touch
+#BBS1 - touch
 #BAS2 - reflective light 
 #BBM1 - motor RIGHT
 #BAM1 - motor LEFT
 #BBM2 - motor 3
-#BBS1 - ultrasonic
+#BAS1 - ultrasonic
 
 #light = psm.BBS1.lightSensorNXT(True)
 
@@ -23,27 +23,29 @@ from time import sleep
 class Sumo:
     #done
     def __init__(self, psm):
+        print "init"
         self.psm = psm
-        self.psm.BAS1.resetTouchesNXT()
+        self.psm.BBS1.resetTouchesNXT()
         self.on = False
-        self.black = 690
-
-    #done
-    def isBlack(self, light):
-        if light >= self.black:
-            return True
-        return False
+        self.black = 700
+        self.speed = 75
 
     #done
     #turns on, puts light on, waits 5 sec, then goes straight to tip
     def turnOn(self):
+        print "turn on"
         self.on = True
         self.psm.led(1,255,0,0)
         sleep(5)
-        self.psm.BAM1.setSpeed(100)
-        self.psm.BBM1.setSpeed(100)
-        self.psm.BBM2.setSpeed(-100)
-        sleep(.8)
+        self.psm.BAM1.setSpeed(self.speed)
+        self.psm.BBM1.setSpeed(self.speed)
+        self.psm.BBM2.setSpeed(-self.speed)
+        sleep(.6)
+        self.psm.BAM1.setSpeed(0)
+        self.psm.BBM1.setSpeed(0)
+        self.psm.BBM2.setSpeed(0)
+        sleep(.03)
+
 
     #done
     #check on front sensor, maybe do right/left thing (favor right)
@@ -51,17 +53,18 @@ class Sumo:
     #pushes on until on edge, in which case does onEdge thing and quits,
     #or until it sees that it is going backwards/totally static, in which case it goes around
     def push(self):
+        print "push"
         goOn = True
         while(goOn):
             if self.onEdge():
                 goOn = False
                 break
             #go forward
-            self.psm.BAM1.setSpeed(-900)
-            self.psm.BBM1.setSpeed(-900)
-            self.psm.BBM2.setSpeed(900)
+            self.psm.BAM1.setSpeed(self.speed*2)
+            self.psm.BBM1.setSpeed(self.speed*2)
+            self.psm.BBM2.setSpeed(-self.speed*2)
             sleep(.5)
-
+            
             #check if button is pressed
             if (self.psm.isKeyPressed()) or not self.robotVeryFront() or self.onEdge:
                 goOn = False
@@ -70,14 +73,14 @@ class Sumo:
                 goOn = False
                 self.escapeTurn()
                 break
-            
+
             #pause back wheel and check pos
             self.psm.BBM2.float()
             pos = self.BBM2.pos()
-            sleep(.1)
+            sleep(.05)
             tempPos = self.psm.BBM2.pos()
             if tempPos == pos: #if they equal, pause for a second then check again
-                sleep(.5)
+                sleep(.2)
                 tempPos = self.psm.BBM2.pos()
                 if tempPos <= pos:
                     #do esape thing
@@ -97,15 +100,17 @@ class Sumo:
 
     #do right/left thing using go forward and also use that to tell if robot in front, keep checking for side
     def findApponent(self):
+        print "FA"
         goOn = True
         while (goOn):
             if self.onEdge() or self.psm.isKeyPressed():
                 goOn = False
                 break
-            if self.goForward(.5) and self.robotVeryFront():
+            if self.goForward(.02, self.speed) and self.robotVeryFront():
                 self.push()
                 goOn = False
                 break
+                print "bacoooonn"
             if self.robotLeft():
                 self.escapeTurn()
                 goOn = False
@@ -114,52 +119,54 @@ class Sumo:
     #done                
     #go back for half a sec then do a 180
     def turnAround(self):
+        print "TA"
         #assumes that either senses white with back sensor or is b
         #go backwards then spin
-        self.psm.BBM1.setSpeed(200)
-        self.psm.BAM1.setSpeed(200)
-        self.psm.BBM2.setSpeed(-300)
+        self.psm.BBM2.setSpeed(-self.speed)
+        self.psm.BBM1.setSpeed(self.speed)
+        self.psm.BAM1.setSpeed(self.speed)
         sleep(.5)
+        self.psm.BBM2.setSpeed(0)
+        self.psm.BBM1.setSpeed(self.speed)
+        self.psm.BAM1.setSpeed(-self.speed)
+        sleep(3)
         #spin
-        self.psm.led(1,255,0,255)
-        self.psm.BBM1.setSpeed(-200)
-        self.psm.BAM1.setSpeed(200)
-        sleep(.2)
+#        self.psm.BBM1.setSpeed(self.speed)
+ #       self.psm.BAM1.setSpeed(-self.speed)
+  #      self.psm.BBM2.float()
+   #     sleep(5)
         self.findApponent()
 
     #done
     #call when know being pushed back
     def escape(self):
-        self.psm.BBM1.setSpeed(-500)
-        self.psm.BAM1.setSpeed(500)
-        self.psm.BBM2.setSpeed(0)
-        sleep(.05)
-        self.psm.BBM1.setSpeed(-100)
-        self.psm.BAM1.setSpeed(-100)
-        sleep(.02)
-        self.findApponent()
+        print "esc"
+        sself.psm.BBM1.setSpeed(-self.speed*3)
+        self.psm.BAM1.setSpeed(self.speed)
+        self.psm.BBM2.setSpeed(-self.speed/20)
+        sleep(2.1)
+        self.psm.BBM1.setSpeed(self.speed)
+        self.psm.BAM1.setSpeed(self.speed)
+        self.psm.BBM2.setSpeed(-self.speed)
+        sleep(.4)
+        self.push()
 
-    #done
+ #done
     #call when know robot on left
     def escapeTurn(self):
-        self.psm.BBM1.setSpeed(-500)
-        self.psm.BAM1.setSpeed(-500)
-        self.psm.BBM2.setSpeed(500)
-        sleep(.05)
-        if self.isBlack(self.psm.BBS1.lightSensorNXT(True)):
-            self.psm.BBM1.setSpeed(500)
-            self.psm.BAM1.setSpeed(-500)
-            self.psm.BBM2.setSpeed(100)
+        print "escT"
+        for i in range(6):
+            self.psm.BBM1.setSpeed(-self.speed)
+            self.psm.BAM1.setSpeed(-self.speed)
+            self.psm.BBM2.setSpeed(self.speed)
             sleep(.1)
-        else:
-            self.psm.BBM1.setSpeed(500)
-            self.psm.BAM1.setSpeed(500)
-            self.psm.BBM2.setSpeed(-500)
-        self.findApponent()
+            self.onEdge()
+        self.push()
 
     #done
     #just do right/left thing, favor left (if good and done, do zig zag)
     def goForward(self, time, speed):
+        print "goF"
         if self.robotFront():
             self.psm.BBM1.setSpeed(speed*-.95)
             self.psm.BAM1.setSpeed(speed*-1.05)
@@ -172,31 +179,32 @@ class Sumo:
         sleep(time)
         return False
         
-        
-    def robotLeft(self):#idk how this works with multiple touches, test this out
-        if self.psm.BAS1.numTouchesNXT() > 0:
-            self.psm.BAS1.resetTouchesNXT()
-            self.psm.led(1,0,255,0) #turn on green to signal a touch
+        def isBlack(self, light):
+        print "isBlac"
+        if light >= self.black:
             return True
         return False
 
     #done, but num needs fiddling
     def robotFront(self):
-        return psm.BBS1.distanceUSEV3() <= 900 
+        print "rFt"
+        return psm.BAS1.distanceUSEV3() <= 1000
 
      #done, but num needs fiddling
-    def robotVeryFront(self)
-        return psm.BBS1.distanceUSEV3() <= 90 
-
+    def robotVeryFront(self):
+        print "rVF"
+        return psm.BAS1.distanceUSEV3() <= 60
 
     #done
     def onEdge(self):
+        print "oE"
+#       return False
         lightSenseWhite = not (self.isBlack(self.psm.BAS2.lightSensorNXT(True)))
         if self.on and lightSenseWhite:
             self.turnAround()
             return True
         return False
-
+        
 
 psm = PiStorms()
 robot = Sumo(psm)
@@ -207,4 +215,8 @@ while True:
     sleep(.1)
 robot.turnOn()
 robot.findApponent()
-
+psm.BBM1.brake()
+psm.BBM2.brake()
+psm.BAM1.brake()
+psm.led(1,0,0,0)
+psm.led(2,0,0,0)
